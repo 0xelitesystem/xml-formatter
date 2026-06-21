@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XML Formatter</title>
+<meta name="description" content="Format, minify, and validate XML in your browser. Private, offline, and contained in a single file.">
+<link rel="canonical" href="https://0xelitesystem.github.io/xml-formatter/">
+<meta property="og:title" content="XML Formatter">
+<meta property="og:description" content="Format, minify, and validate XML in your browser. Private, offline, and contained in a single file.">
+<meta property="og:url" content="https://0xelitesystem.github.io/xml-formatter/">
+<meta property="og:type" content="website">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"XML Formatter","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://0xelitesystem.github.io/xml-formatter/","author":{"@type":"Person","name":"0xelitesystem","url":"https://elitesystem.ai"}}
+</script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --panel-2: #eef1f4;
+    --text: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
+    --accent: #0969da;
+    --accent-text: #ffffff;
+    --ok: #1a7f37;
+    --ok-bg: #e6f4ea;
+    --err: #cf222e;
+    --err-bg: #ffebe9;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-2: #1c2230;
+      --text: #e6edf3;
+      --muted: #9198a1;
+      --border: #30363d;
+      --accent: #4493f8;
+      --accent-text: #0d1117;
+      --ok: #3fb950;
+      --ok-bg: #12261a;
+      --err: #f85149;
+      --err-bg: #2d1416;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 18px 40px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+  }
+  .tagline {
+    margin: 4px 0 18px;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  button {
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 7px 13px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  button:hover { background: var(--panel-2); }
+  button:active { transform: translateY(1px); }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+  }
+  button.primary:hover { filter: brightness(1.05); background: var(--accent); }
+  button:focus-visible, select:focus-visible, textarea:focus-visible, pre:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .ctl {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  select {
+    font: inherit;
+    font-size: 0.88rem;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .grow { flex: 1 1 auto; }
+  .sep { width: 1px; align-self: stretch; background: var(--border); margin: 2px 4px; }
+  .editor {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    flex: 1 1 auto;
+    min-height: 58vh;
+  }
+  .pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 240px;
+  }
+  .pane-head {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  textarea, #output {
+    flex: 1 1 auto;
+    width: 100%;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--panel);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+    padding: 12px 14px;
+    tab-size: 2;
+  }
+  textarea {
+    resize: none;
+    white-space: pre;
+    overflow: auto;
+  }
+  #output {
+    overflow: auto;
+    white-space: pre;
+    margin: 0;
+  }
+  .status {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 0.9rem;
+    min-height: 1em;
+  }
+  .status.ok {
+    color: var(--ok);
+    background: var(--ok-bg);
+    border-color: var(--ok);
+  }
+  .status.err {
+    color: var(--err);
+    background: var(--err-bg);
+    border-color: var(--err);
+    font-weight: 500;
+  }
+  .frame {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border: 1px solid var(--err);
+    border-radius: 8px;
+    background: var(--err-bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+    white-space: pre;
+    overflow: auto;
+  }
+  footer {
+    margin-top: 26px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  footer a { color: var(--accent); }
+  @media (max-width: 820px) {
+    .editor { grid-template-columns: 1fr; }
+    .pane { min-height: 220px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>XML Formatter</h1>
+    <p class="tagline">Format, minify, and validate XML entirely in your browser. No uploads, no tracking, nothing leaves your machine.</p>
+  </header>
+
+  <div class="toolbar">
+    <button id="btnFormat" class="primary" type="button" title="Pretty print (Ctrl+Enter)">Format</button>
+    <button id="btnMinify" type="button" title="Collapse to one line">Minify</button>
+    <button id="btnValidate" type="button" title="Check well-formedness only">Validate</button>
+    <span class="sep" aria-hidden="true"></span>
+    <label class="ctl" for="indent">Indent
+      <select id="indent">
+        <option value="2">2 spaces</option>
+        <option value="4">4 spaces</option>
+        <option value="tab">Tab</option>
+      </select>
+    </label>
+    <label class="ctl"><input type="checkbox" id="stripComments"> Strip comments on minify</label>
+    <span class="grow" aria-hidden="true"></span>
+    <button id="btnSample" type="button">Sample</button>
+    <button id="btnCopy" type="button">Copy</button>
+    <button id="btnClear" type="button">Clear</button>
+  </div>
+
+  <div class="editor">
+    <section class="pane">
+      <div class="pane-head"><label for="input">Input</label></div>
+      <textarea id="input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste or type XML here, then press Format."></textarea>
+    </section>
+    <section class="pane">
+      <div class="pane-head"><label for="output">Output</label></div>
+      <pre id="output" tabindex="0"></pre>
+    </section>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite">Ready. Paste XML and press Format, or load the sample.</div>
+  <pre id="frame" class="frame" hidden></pre>
+
+  <footer>
+    Single file, runs fully offline. Open it from disk and it still works.
+    Source and siblings at <a href="https://github.com/0xelitesystem" rel="noopener">github.com/0xelitesystem</a>.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ----------------------------------------------------------------------
+     XML name validation (per the XML 1.0 Name production).
+     NameStartChar and NameChar follow the official character ranges so
+     namespaced and Unicode element names validate correctly.
+     ---------------------------------------------------------------------- */
+  var NAME_START =
+    ":A-Z_a-z" +
+    "\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF" +
+    "\\u200C\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF" +
+    "\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}";
+  var NAME_REST = NAME_START + "\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
+  var NAME_RE = new RegExp("^[" + NAME_START + "][" + NAME_REST + "]*$", "u");
+  var NAME_CHAR_RE = new RegExp("[" + NAME_REST + "]", "u");
+
+  function isXmlName(s) {
+    return s.length > 0 && NAME_RE.test(s);
+  }
+
+  /* ----------------------------------------------------------------------
+     Error type carrying a 1-based line and column derived from the source.
+     ---------------------------------------------------------------------- */
+  function lineCol(src, index) {
+    var line = 1, col = 1;
+    var stop = Math.min(index, src.length);
+    for (var i = 0; i < stop; i++) {
+      if (src.charCodeAt(i) === 10) { line++; col = 1; } else { col++; }
+    }
+    return { line: line, col: col };
+  }
+
+  function XmlError(message, index, src) {
+    var lc = lineCol(src, index);
+    this.isXmlError = true;
+    this.message = message;
+    this.index = index;
+    this.line = lc.line;
+    this.col = lc.col;
+  }
+
+  /* ----------------------------------------------------------------------
+     Parser. Single pass, stack based. Produces a node tree and well
+     formedness errors with positions. Node types:
+       decl, doctype, comment, pi, cdata, element, text
+     ---------------------------------------------------------------------- */
+  function parse(src) {
+    var len = src.length;
+    var pos = 0;
+    var top = [];
+    var stack = [];
+    var rootEl = null;
+    var sawDoctype = false;
+    var stats = { elements: 0, attributes: 0, maxDepth: 0, comments: 0, textNodes: 0, cdata: 0, pis: 0 };
+
+    function err(msg, at) { throw new XmlError(msg, at == null ? pos : at, src); }
+    function cur() { return stack.length ? stack[stack.length - 1].children : top; }
+    function isWS(c) { return c === " " || c === "\t" || c === "\n" || c === "\r"; }
+    function skipWS() { while (pos < len && isWS(src.charAt(pos))) pos++; }
+
+    function readName() {
+      var start = pos;
+      while (pos < len && NAME_CHAR_RE.test(src.charAt(pos))) pos++;
+      var name = src.slice(start, pos);
+      if (name.length === 0) err("Expected a name", start);
+      if (!NAME_RE.test(name)) err('Invalid XML name "' + name + '"', start);
+      return name;
+    }
+
+    function checkEntities(text, baseIndex) {
+      var i = -1;
+      while ((i = text.indexOf("&", i + 1)) >= 0) {
+        var rest = text.slice(i);
+        if (!/^&(#[0-9]+;|#x[0-9a-fA-F]+;|[:A-Za-z_][\w.\-:]*;)/.test(rest)) {
+          err("Unescaped '&' (write it as &amp;) or malformed entity reference", baseIndex + i);
+        }
+      }
+    }
+
+    function parseDecl() {
+      var start = pos;
+      pos += 5;
+      var end = src.indexOf("?>", pos);
+      if (end < 0) err("Unterminated XML declaration", start);
+      var inner = src.slice(pos, end);
+      var attrs = [];
+      var re = /([A-Za-z][\w.\-]*)\s*=\s*("([^"]*)"|'([^']*)')/g;
+      var m;
+      while ((m = re.exec(inner))) {
+        var q = m[2].charAt(0);
+        attrs.push({ name: m[1], value: q === '"' ? m[3] : m[4], quote: q });
+      }
+      if (!attrs.length || attrs[0].name !== "version") {
+        err("XML declaration must start with version", start);
+      }
+      for (var a = 0; a < attrs.length; a++) {
+        if (["version", "encoding", "standalone"].indexOf(attrs[a].name) < 0) {
+          err('Invalid attribute "' + attrs[a].name + '" in XML declaration', start);
+        }
+      }
+      top.push({ type: "decl", attrs: attrs });
+      pos = end + 2;
+    }
+
+    function parseComment() {
+      var start = pos;
+      pos += 4;
+      var end = src.indexOf("-->", pos);
+      if (end < 0) err("Unterminated comment", start);
+      var content = src.slice(pos, end);
+      if (content.indexOf("--") >= 0 || content.charAt(content.length - 1) === "-") {
+        err("Comment must not contain '--'", start);
+      }
+      cur().push({ type: "comment", value: content });
+      stats.comments++;
+      pos = end + 3;
+    }
+
+    function parseCDATA() {
+      var start = pos;
+      if (stack.length === 0) err("CDATA is not allowed outside the root element", start);
+      pos += 9;
+      var end = src.indexOf("]]>", pos);
+      if (end < 0) err("Unterminated CDATA section", start);
+      cur().push({ type: "cdata", value: src.slice(pos, end) });
+      stats.cdata++;
+      pos = end + 3;
+    }
+
+    function parsePI() {
+      var start = pos;
+      pos += 2;
+      var target = readName();
+      if (target.toLowerCase() === "xml") {
+        err('Reserved target "' + target + '" (an XML declaration must be the very first thing in the document)', start);
+      }
+      var end = src.indexOf("?>", pos);
+      if (end < 0) err("Unterminated processing instruction", start);
+      var data = src.slice(pos, end).replace(/^\s+/, "");
+      cur().push({ type: "pi", target: target, data: data });
+      stats.pis++;
+      pos = end + 2;
+    }
+
+    function parseDoctype() {
+      var start = pos;
+      if (rootEl) err("DOCTYPE must appear before the root element", start);
+      if (sawDoctype) err("Only one DOCTYPE is allowed", start);
+      pos += 9;
+      var depth = 0;
+      var i = pos;
+      while (i < len) {
+        var ch = src.charAt(i);
+        if (ch === "[") depth++;
+        else if (ch === "]") depth--;
+        else if (ch === ">" && depth <= 0) break;
+        i++;
+      }
+      if (i >= len) err("Unterminated DOCTYPE", start);
+      sawDoctype = true;
+      top.push({ type: "doctype", value: src.slice(start, i + 1) });
+      pos = i + 1;
+    }
+
+    function pushElement(name, attrs, selfClosing, index) {
+      var node = { type: "element", name: name, attrs: attrs, children: [], selfClosing: selfClosing, index: index };
+      if (stack.length === 0) {
+        if (rootEl) err('Only one root element is allowed (found a second root <' + name + ">)", index);
+        rootEl = node;
+      }
+      cur().push(node);
+      stats.elements++;
+      stats.attributes += attrs.length;
+      var depth = stack.length + 1;
+      if (depth > stats.maxDepth) stats.maxDepth = depth;
+      if (!selfClosing) stack.push(node);
+    }
+
+    function parseStartTag() {
+      var start = pos;
+      pos++;
+      var name = readName();
+      var attrs = [];
+      var seen = Object.create(null);
+      while (true) {
+        var beforeWS = pos;
+        skipWS();
+        var hadWS = pos > beforeWS;
+        if (pos >= len) err("Unterminated start tag <" + name + ">", start);
+        var ch = src.charAt(pos);
+        if (ch === ">") { pos++; pushElement(name, attrs, false, start); return; }
+        if (ch === "/") {
+          if (src.charAt(pos + 1) === ">") { pos += 2; pushElement(name, attrs, true, start); return; }
+          err("Malformed tag (a slash must be immediately followed by '>')", pos);
+        }
+        if (!hadWS) err("Expected whitespace before attribute name", pos);
+        var anStart = pos;
+        var an = readName();
+        if (seen[an]) err('Duplicate attribute "' + an + '"', anStart);
+        seen[an] = true;
+        skipWS();
+        if (src.charAt(pos) !== "=") err('Expected "=" after attribute "' + an + '"', pos);
+        pos++;
+        skipWS();
+        var q = src.charAt(pos);
+        if (q !== '"' && q !== "'") err('Attribute "' + an + '" value must be quoted', pos);
+        pos++;
+        var vstart = pos;
+        while (pos < len && src.charAt(pos) !== q) pos++;
+        if (pos >= len) err("Unterminated attribute value", vstart);
+        var value = src.slice(vstart, pos);
+        pos++;
+        if (value.indexOf("<") >= 0) err("Attribute value must not contain '<'", vstart);
+        checkEntities(value, vstart);
+        attrs.push({ name: an, value: value, quote: q });
+      }
+    }
+
+    function parseEndTag() {
+      var start = pos;
+      pos += 2;
+      var name = readName();
+      skipWS();
+      if (src.charAt(pos) !== ">") err('Expected ">" in closing tag </' + name + ">", pos);
+      pos++;
+      if (stack.length === 0) err("Unexpected closing tag </" + name + "> (there is no open element)", start);
+      var open = stack[stack.length - 1];
+      if (open.name !== name) {
+        err("Mismatched tag: expected </" + open.name + "> but found </" + name + ">", start);
+      }
+      stack.pop();
+    }
+
+    function parseText() {
+      var start = pos;
+      while (pos < len && src.charAt(pos) !== "<") pos++;
+      var raw = src.slice(start, pos);
+      if (stack.length === 0) {
+        var nz = raw.search(/\S/);
+        if (nz >= 0) err("Text is not allowed outside the root element", start + nz);
+        return;
+      }
+      var bad = raw.indexOf("]]>");
+      if (bad >= 0) err("Text must not contain the sequence ']]>'", start + bad);
+      checkEntities(raw, start);
+      cur().push({ type: "text", value: raw });
+      stats.textNodes++;
+    }
+
+    while (pos < len) {
+      if (src.charAt(pos) === "<") {
+        if (pos === 0 && src.slice(0, 5) === "<?xml" && (len === 5 || isWS(src.charAt(5)))) parseDecl();
+        else if (src.slice(pos, pos + 9) === "<![CDATA[") parseCDATA();
+        else if (src.slice(pos, pos + 4) === "<!--") parseComment();
+        else if (src.slice(pos, pos + 9) === "<!DOCTYPE") parseDoctype();
+        else if (src.slice(pos, pos + 2) === "<!") err("Unknown markup declaration", pos);
+        else if (src.slice(pos, pos + 2) === "</") parseEndTag();
+        else if (src.slice(pos, pos + 2) === "<?") parsePI();
+        else parseStartTag();
+      } else {
+        parseText();
+      }
+    }
+
+    if (stack.length) {
+      var openEl = stack[stack.length - 1];
+      err("Unclosed element <" + openEl.name + ">", openEl.index);
+    }
+    if (!rootEl) err("No root element found", 0);
+
+    return { nodes: top, stats: stats };
+  }
+
+  /* ----------------------------------------------------------------------
+     Serialization. Attributes keep their original quote character so a
+     value containing the other quote never needs re-escaping.
+     ---------------------------------------------------------------------- */
+  function serializeAttrs(attrs) {
+    var out = "";
+    for (var i = 0; i < attrs.length; i++) {
+      var a = attrs[i];
+      out += " " + a.name + "=" + a.quote + a.value + a.quote;
+    }
+    return out;
+  }
+
+  function significant(children) {
+    var out = [];
+    for (var i = 0; i < children.length; i++) {
+      var c = children[i];
+      if (c.type === "text" && !/\S/.test(c.value)) continue;
+      out.push(c);
+    }
+    return out;
+  }
+
+  function formatNode(n, level, unit, out) {
+    var pad = repeat(unit, level);
+    switch (n.type) {
+      case "decl":
+        out.push("<?xml" + serializeAttrs(n.attrs) + "?>");
+        break;
+      case "doctype":
+        out.push(n.value);
+        break;
+      case "comment":
+        out.push(pad + "<!--" + n.value + "-->");
+        break;
+      case "pi":
+        out.push(pad + "<?" + n.target + (n.data ? " " + n.data : "") + "?>");
+        break;
+      case "cdata":
+        out.push(pad + "<![CDATA[" + n.value + "]]>");
+        break;
+      case "text":
+        var t = n.value.trim();
+        if (t) out.push(pad + t);
+        break;
+      case "element": {
+        var open = "<" + n.name + serializeAttrs(n.attrs);
+        var kids = significant(n.children);
+        if (kids.length === 0) {
+          out.push(pad + open + (n.selfClosing ? "/>" : "></" + n.name + ">"));
+        } else if (kids.length === 1 && kids[0].type === "text") {
+          out.push(pad + open + ">" + kids[0].value.trim() + "</" + n.name + ">");
+        } else {
+          out.push(pad + open + ">");
+          for (var i = 0; i < kids.length; i++) formatNode(kids[i], level + 1, unit, out);
+          out.push(pad + "</" + n.name + ">");
+        }
+        break;
+      }
+    }
+  }
+
+  function repeat(s, n) {
+    var out = "";
+    for (var i = 0; i < n; i++) out += s;
+    return out;
+  }
+
+  function format(nodes, unit) {
+    var out = [];
+    for (var i = 0; i < nodes.length; i++) formatNode(nodes[i], 0, unit, out);
+    return out.join("\n");
+  }
+
+  function minifyNode(n, stripComments, out) {
+    switch (n.type) {
+      case "decl":
+        out.push("<?xml" + serializeAttrs(n.attrs) + "?>");
+        break;
+      case "doctype":
+        out.push(n.value);
+        break;
+      case "comment":
+        if (!stripComments) out.push("<!--" + n.value + "-->");
+        break;
+      case "pi":
+        out.push("<?" + n.target + (n.data ? " " + n.data : "") + "?>");
+        break;
+      case "cdata":
+        out.push("<![CDATA[" + n.value + "]]>");
+        break;
+      case "text":
+        if (/\S/.test(n.value)) out.push(n.value);
+        break;
+      case "element": {
+        var open = "<" + n.name + serializeAttrs(n.attrs);
+        var kids = significant(n.children);
+        if (kids.length === 0) {
+          out.push(n.selfClosing ? open + "/>" : open + "></" + n.name + ">");
+        } else {
+          out.push(open + ">");
+          for (var i = 0; i < kids.length; i++) minifyNode(kids[i], stripComments, out);
+          out.push("</" + n.name + ">");
+        }
+        break;
+      }
+    }
+  }
+
+  function minify(nodes, stripComments) {
+    var out = [];
+    for (var i = 0; i < nodes.length; i++) minifyNode(nodes[i], stripComments, out);
+    return out.join("");
+  }
+
+  /* Exposed for headless testing in Node, harmless in the browser. */
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { parse: parse, format: format, minify: minify, isXmlName: isXmlName };
+  }
+
+  /* ----------------------------------------------------------------------
+     UI wiring. Skipped when there is no document (Node test harness).
+     ---------------------------------------------------------------------- */
+  if (typeof document === "undefined") return;
+
+  var input = document.getElementById("input");
+  var output = document.getElementById("output");
+  var statusEl = document.getElementById("status");
+  var frame = document.getElementById("frame");
+  var indentSel = document.getElementById("indent");
+  var stripBox = document.getElementById("stripComments");
+
+  var SAMPLE =
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    "<!-- Sample purchase order -->\n" +
+    '<order id="A-1001" currency="USD"><customer>\n' +
+    "<name>Ada Lovelace</name><email>ada@example.com</email></customer>\n" +
+    '  <items>   <item sku="BK-42" qty="2"><title>Notes on the Analytical Engine</title>\n' +
+    '<price>19.99</price></item><item sku="PN-7" qty="1"/></items>\n' +
+    "<note><![CDATA[ Gift wrap & ship with a <card>. ]]></note>\n" +
+    "<terms>Net 30 &amp; signature required</terms></order>\n";
+
+  function getUnit() {
+    var v = indentSel.value;
+    return v === "tab" ? "\t" : repeat(" ", parseInt(v, 10));
+  }
+
+  function fmtBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / (1024 * 1024)).toFixed(2) + " MB";
+  }
+
+  function byteLen(s) {
+    if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s).length;
+    return unescape(encodeURIComponent(s)).length;
+  }
+
+  function setNeutral(msg) {
+    statusEl.className = "status";
+    statusEl.textContent = msg;
+    frame.hidden = true;
+    frame.textContent = "";
+  }
+
+  function setValid(stats, src) {
+    statusEl.className = "status ok";
+    statusEl.textContent =
+      "Well-formed XML. " + stats.elements + " element" + (stats.elements === 1 ? "" : "s") +
+      ", max depth " + stats.maxDepth +
+      ", " + stats.attributes + " attribute" + (stats.attributes === 1 ? "" : "s") +
+      ", " + fmtBytes(byteLen(src)) + ".";
+    frame.hidden = true;
+    frame.textContent = "";
+  }
+
+  function setError(e, src) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Invalid XML at line " + e.line + ", column " + e.col + ": " + e.message;
+    frame.hidden = false;
+    frame.textContent = codeFrame(src, e.line, e.col);
+  }
+
+  function codeFrame(src, line, col) {
+    var lines = src.split("\n");
+    var startLine = Math.max(1, line - 2);
+    var pieces = [];
+    var gutter = String(line).length;
+    for (var ln = startLine; ln <= line; ln++) {
+      var content = lines[ln - 1];
+      if (content == null) continue;
+      pieces.push(padStart(String(ln), gutter) + " | " + content);
+    }
+    pieces.push(repeat(" ", gutter) + " | " + repeat(" ", Math.max(0, col - 1)) + "^");
+    return pieces.join("\n");
+  }
+
+  function padStart(s, n) {
+    while (s.length < n) s = " " + s;
+    return s;
+  }
+
+  function run(transform) {
+    var src = input.value;
+    if (!src.trim()) {
+      output.textContent = "";
+      setNeutral("Nothing to process. Paste some XML or load the sample.");
+      return;
+    }
+    try {
+      var r = parse(src);
+      if (transform) output.textContent = transform(r);
+      setValid(r.stats, src);
+    } catch (e) {
+      if (e && e.isXmlError) setError(e, src);
+      else throw e;
+    }
+  }
+
+  document.getElementById("btnFormat").addEventListener("click", function () {
+    run(function (r) { return format(r.nodes, getUnit()); });
+  });
+  document.getElementById("btnMinify").addEventListener("click", function () {
+    run(function (r) { return minify(r.nodes, stripBox.checked); });
+  });
+  document.getElementById("btnValidate").addEventListener("click", function () {
+    run(null);
+  });
+  document.getElementById("btnSample").addEventListener("click", function () {
+    input.value = SAMPLE;
+    run(function (r) { return format(r.nodes, getUnit()); });
+  });
+  document.getElementById("btnClear").addEventListener("click", function () {
+    input.value = "";
+    output.textContent = "";
+    setNeutral("Cleared.");
+    input.focus();
+  });
+  document.getElementById("btnCopy").addEventListener("click", function () {
+    var text = output.textContent;
+    if (!text) { setNeutral("Output is empty, nothing to copy."); return; }
+    copyText(text);
+  });
+
+  input.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      run(function (r) { return format(r.nodes, getUnit()); });
+    }
+  });
+
+  function copyText(text) {
+    function done() {
+      var prev = statusEl.textContent;
+      var cls = statusEl.className;
+      statusEl.className = "status ok";
+      statusEl.textContent = "Copied output to clipboard.";
+      setTimeout(function () { statusEl.className = cls; statusEl.textContent = prev; }, 1400);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+    function fallbackCopy() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); done(); } catch (err) { setNeutral("Copy failed. Select the text manually."); }
+      document.body.removeChild(ta);
+    }
+  }
+})();
+</script>
+</body>
+</html>
