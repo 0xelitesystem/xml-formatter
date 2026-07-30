@@ -42,6 +42,10 @@ python -m http.server 8000
 
 No build step. No bundler, no dependencies, no package manager. The entire tool is a single `index.html` with inline CSS and JavaScript. Edit the file, refresh the page.
 
+## More
+
+Part of a catalog of single-file browser tools and plain-language references, all MIT licensed and dependency-free: [0xelitesystem.github.io](https://0xelitesystem.github.io/). Built by [elitesystem.ai](https://elitesystem.ai).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
