@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -216,6 +216,35 @@
     .editor { grid-template-columns: 1fr; }
     .pane { min-height: 220px; }
   }
+</style>
+<style>
+/* elitesystem brand tokens: chrome only, meaning preserved */
+:root, :root[data-theme="dark"] {
+  --accent: #d4ff3a;
+  --accent-text: #0a0a0a;
+  --bg: #0a0a0a;
+  --border: #1f1f1d;
+  --err: #ff6450;
+  --muted: #6e6e68;
+  --ok: #7ddc7d;
+  --panel: #111110;
+  --panel-2: #161614;
+  --text: #e8e8e3;
+}
+:root[data-theme="light"] {
+  --accent: #2d6b00;
+  --accent-text: #ffffff;
+  --bg: #e8ebef;
+  --border: #c8cdd5;
+  --err: #b8341a;
+  --muted: #6e6e68;
+  --ok: #1a5c2e;
+  --panel: #dee2e8;
+  --panel-2: #d3d7df;
+  --text: #0a0a0a;
+}
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
 </style>
 </head>
 <body>
